@@ -1,28 +1,6 @@
 import 'dart:ffi' as ffi;
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-
-/// Windows message structure passed from native code
-final class WindowsMessage extends ffi.Struct {
-  @ffi.IntPtr()
-  external int windowHandle;
-
-  @ffi.Int32()
-  external int message;
-
-  @ffi.Int64()
-  external int wParam;
-
-  @ffi.Int64()
-  external int lParam;
-
-  @ffi.Int64()
-  external int lResult;
-
-  @ffi.Bool()
-  external bool handled;
-}
+import 'src/windows_message.dart';
+import 'src/window_proc_delegate_internal.dart' as internal;
 
 /// Signature for a WindowProc delegate callback.
 ///
@@ -37,144 +15,56 @@ final class WindowsMessage extends ffi.Struct {
 typedef WindowProcDelegateCallback =
     int? Function(int hwnd, int message, int wParam, int lParam);
 
-/// Native callback signature for FFI
-typedef NativeWindowProcCallback =
-    ffi.Void Function(ffi.Pointer<WindowsMessage> message);
+final List<WindowProcDelegateCallback?> _delegates = [];
 
-/// Initialize Dart API DL
-@ffi.Native<ffi.IntPtr Function(ffi.Pointer<ffi.Void>)>(
-  symbol: 'WindowProcDelegateInitDartApi',
-)
-external int _initDartApi(ffi.Pointer<ffi.Void> data);
-
-/// Set the native callback for WindowProc messages with engine ID
-@ffi.Native<
-  ffi.Void Function(
-    ffi.Int64,
-    ffi.Pointer<
-      ffi.NativeFunction<ffi.Void Function(ffi.Pointer<WindowsMessage>)>
-    >,
-  )
->(symbol: 'WindowProcDelegateSetCallback')
-external void _setCallback(
-  int engineId,
-  ffi.Pointer<
-    ffi.NativeFunction<ffi.Void Function(ffi.Pointer<WindowsMessage>)>
-  >
-  callback,
-);
-
-class WindowProcDelegate {
-  static final MethodChannel _channel = const MethodChannel(
-    'window_proc_delegate',
-  );
-
-  static final List<WindowProcDelegateCallback?> _delegates = [];
-  static ffi.NativeCallable<NativeWindowProcCallback>? _nativeCallable;
-  static bool _initialized = false;
-  static bool _dartApiInitialized = false;
-
-  /// Register a WindowProc delegate.
-  ///
-  /// The delegate will be called for each WindowProc message.
-  /// Returns an ID that can be used to unregister the delegate.
-  static int registerDelegate(WindowProcDelegateCallback delegate) {
-    if (!_initialized) {
-      _initialize();
-    }
-
-    _delegates.add(delegate);
-    return _delegates.length - 1;
+/// Register a WindowProc delegate.
+///
+/// The delegate will be called for each WindowProc message.
+/// Returns an ID that can be used to unregister the delegate.
+int registerWindowProcDelegate(WindowProcDelegateCallback delegate) {
+  if (!internal.initialized) {
+    internal.initialize(_delegates, _handleWindowProc);
   }
 
-  /// Unregister a WindowProc delegate by its ID.
-  static void unregisterDelegate(int id) {
-    if (id >= 0 && id < _delegates.length) {
-      _delegates[id] = null; // Replace with null
-    }
+  _delegates.add(delegate);
+  return _delegates.length - 1;
+}
 
-    // If all delegates are removed, clear the native callback
-    if (_delegates.every((d) => d == null)) {
-      _cleanup();
-    }
+/// Unregister a WindowProc delegate by its ID.
+void unregisterWindowProcDelegate(int id) {
+  if (id >= 0 && id < _delegates.length) {
+    _delegates[id] = null; // Replace with null
   }
 
-  static void _ensureNativeLibraryInitialized() {
-    if (_dartApiInitialized) return;
-
-    if (!Platform.isWindows) return;
-
-    try {
-      final initResult = _initDartApi(ffi.NativeApi.initializeApiDLData);
-      if (initResult != 0) {
-        debugPrint('Failed to initialize Dart API DL: $initResult');
-      } else {
-        _dartApiInitialized = true;
-      }
-    } catch (e) {
-      debugPrint('Failed to initialize Dart API: $e');
-    }
+  // If all delegates are removed, clear the native callback
+  if (_delegates.every((d) => d == null)) {
+    _cleanup();
   }
+}
 
-  static void _initialize() {
-    if (_initialized) return;
+void _handleWindowProc(ffi.Pointer<WindowsMessage> message) {
+  final msg = message.ref;
 
-    if (!Platform.isWindows) return;
-
-    _ensureNativeLibraryInitialized();
-
-    // Create native callable that dispatches to all delegates
-    _nativeCallable = ffi.NativeCallable<NativeWindowProcCallback>.isolateLocal(
-      _handleWindowProc,
-    );
-
-    // Get the engine ID and register the native callback
-    try {
-      final engineId = PlatformDispatcher.instance.engineId!;
-      _setCallback(engineId, _nativeCallable!.nativeFunction);
-      // Also notify the plugin instance via method channel
-      _channel.invokeMethod('setEngineId', {'engineId': engineId});
-    } catch (e) {
-      debugPrint('Failed to set callback: $e');
-    }
-    _initialized = true;
-  }
-
-  static void _handleWindowProc(ffi.Pointer<WindowsMessage> message) {
-    final msg = message.ref;
-
-    // Call each delegate until one handles the message
-    for (final delegate in _delegates) {
-      if (delegate != null) {
-        final result = delegate(
-          msg.windowHandle,
-          msg.message,
-          msg.wParam,
-          msg.lParam,
-        );
-        // If any delegate returns a non-null result, the message is handled
-        if (result != null) {
-          msg.lResult = result;
-          msg.handled = true;
-          return;
-        }
+  // Call each delegate until one handles the message
+  for (final delegate in _delegates) {
+    if (delegate != null) {
+      final result = delegate(
+        msg.windowHandle,
+        msg.message,
+        msg.wParam,
+        msg.lParam,
+      );
+      // If any delegate returns a non-null result, the message is handled
+      if (result != null) {
+        msg.lResult = result;
+        msg.handled = true;
+        return;
       }
     }
   }
+}
 
-  static void _cleanup() {
-    if (_nativeCallable != null) {
-      try {
-        final engineId = PlatformDispatcher.instance.implicitView?.viewId ?? 0;
-        _setCallback(engineId, ffi.nullptr);
-        _channel.invokeMethod('setEngineId', {'engineId': 0});
-      } catch (e) {
-        debugPrint('Failed to clear callback: $e');
-      }
-      _nativeCallable?.close();
-      _nativeCallable = null;
-      _initialized = false;
-    }
-    _delegates.clear();
-  }
+void _cleanup() {
+  internal.cleanup();
+  _delegates.clear();
 }

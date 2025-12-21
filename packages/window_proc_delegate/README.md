@@ -36,7 +36,7 @@ dependencies:
 import 'package:window_proc_delegate/window_proc_delegate.dart';
 
 // Register a delegate to handle WindowProc messages
-int delegateId = WindowProcDelegate.registerDelegate(
+int delegateId = registerWindowProcDelegate(
   (int hwnd, int message, int wParam, int lParam) {
     // Check for WM_ACTIVATEAPP (0x001C)
     if (message == 0x001C) {
@@ -49,7 +49,7 @@ int delegateId = WindowProcDelegate.registerDelegate(
 );
 
 // Later, unregister the delegate
-WindowProcDelegate.unregisterDelegate(delegateId);
+unregisterWindowProcDelegate(delegateId);
 ```
 
 ### Intercepting Messages
@@ -57,7 +57,7 @@ WindowProcDelegate.unregisterDelegate(delegateId);
 You can intercept and prevent default handling of messages by returning a result value:
 
 ```dart
-int delegateId = WindowProcDelegate.registerDelegate(
+int delegateId = registerWindowProcDelegate(
   (int hwnd, int message, int wParam, int lParam) {
     // Intercept WM_CLOSE (0x0010) to prevent window closing
     if (message == 0x0010) {
@@ -75,7 +75,7 @@ int delegateId = WindowProcDelegate.registerDelegate(
 You can set a custom result value for handled messages:
 
 ```dart
-int delegateId = WindowProcDelegate.registerDelegate(
+int delegateId = registerWindowProcDelegate(
   (int hwnd, int message, int wParam, int lParam) {
     if (message == 0x0084) { // WM_NCHITTEST
       // Return custom result
@@ -99,6 +99,16 @@ The callback receives the following parameters:
 **Return value:**
 - Return an `int` value to handle the message and use that as the result
 - Return `null` to let other delegates process the message
+
+## API
+
+### `registerWindowProcDelegate(WindowProcDelegateCallback delegate)`
+
+Registers a WindowProc delegate callback. Returns an ID that can be used to unregister the delegate later.
+
+### `unregisterWindowProcDelegate(int id)`
+
+Unregisters a previously registered delegate by its ID.
 
 ## Common Windows Messages
 
