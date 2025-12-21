@@ -20,7 +20,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _registerDelegate();
+    // Removed auto-registration - use buttons to register/unregister
   }
 
   @override
@@ -33,7 +33,12 @@ class _MyAppState extends State<MyApp> {
 
   // Register a WindowProc delegate to intercept messages
   void _registerDelegate() {
-    _delegateId = registerWindowProcDelegate((hwnd, message, wParam, lParam) {
+    if (_delegateId != null) {
+      // Already registered
+      return;
+    }
+
+    final id = registerWindowProcDelegate((hwnd, message, wParam, lParam) {
       // Example: Log WM_ACTIVATEAPP (0x001C) messages
       if (message == 0x001C) {
         setState(() {
@@ -55,6 +60,28 @@ class _MyAppState extends State<MyApp> {
       // Return null to let other handlers process the message
       return null;
     });
+
+    setState(() {
+      _delegateId = id;
+      _messages.insert(0, 'Delegate registered with ID: $id');
+      if (_messages.length > 10) {
+        _messages.removeLast();
+      }
+    });
+  }
+
+  // Unregister the WindowProc delegate
+  void _unregisterDelegate() {
+    if (_delegateId != null) {
+      unregisterWindowProcDelegate(_delegateId!);
+      setState(() {
+        _messages.insert(0, 'Delegate unregistered (ID: $_delegateId)');
+        _delegateId = null;
+        if (_messages.length > 10) {
+          _messages.removeLast();
+        }
+      });
+    }
   }
 
   @override
@@ -67,6 +94,29 @@ class _MyAppState extends State<MyApp> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Control buttons
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _delegateId == null ? _registerDelegate : null,
+                    child: const Text('Register Delegate'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _delegateId != null ? _unregisterDelegate : null,
+                    child: const Text('Unregister Delegate'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Status: ${_delegateId != null ? "Registered (ID: $_delegateId)" : "Not Registered"}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: _delegateId != null ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
               Text(
                 'WindowProc Messages:',
                 style: Theme.of(context).textTheme.titleMedium,
@@ -76,7 +126,7 @@ class _MyAppState extends State<MyApp> {
                 child: _messages.isEmpty
                     ? const Center(
                         child: Text(
-                          'No messages intercepted yet.\nTry switching to another window and back.',
+                          'No messages intercepted yet.\nRegister the delegate and try switching to another window and back.',
                           textAlign: TextAlign.center,
                         ),
                       )

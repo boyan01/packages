@@ -39,7 +39,6 @@ class WindowProcDelegatePlugin : public flutter::Plugin {
  private:
   flutter::PluginRegistrarWindows* registrar_;
   int window_proc_delegate_id_;
-  int64_t engine_id_;
 };
 
 }  // namespace window_proc_delegate

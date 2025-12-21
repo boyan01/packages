@@ -1,3 +1,7 @@
+## 0.0.2
+* Removed engine-specific message restriction - messages are now delivered to all registered delegates
+* Fixed crash issue when unregistering delegates
+
 ## 0.0.1
 
 * Initial release with WindowProc delegate support for Windows

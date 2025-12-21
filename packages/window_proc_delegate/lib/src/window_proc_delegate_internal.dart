@@ -32,14 +32,11 @@ external void setCallback(
   callback,
 );
 
-final MethodChannel channel = const MethodChannel('window_proc_delegate');
-
-ffi.NativeCallable<NativeWindowProcCallback>? nativeCallable;
-bool initialized = false;
-bool dartApiInitialized = false;
+bool _initialized = false;
+bool _dartApiInitialized = false;
 
 void ensureNativeLibraryInitialized() {
-  if (dartApiInitialized) return;
+  if (_dartApiInitialized) return;
 
   if (!Platform.isWindows) return;
 
@@ -48,7 +45,7 @@ void ensureNativeLibraryInitialized() {
     if (initResult != 0) {
       debugPrint('Failed to initialize Dart API DL: $initResult');
     } else {
-      dartApiInitialized = true;
+      _dartApiInitialized = true;
     }
   } catch (e) {
     debugPrint('Failed to initialize Dart API: $e');
@@ -59,40 +56,24 @@ void initialize(
   List<WindowProcDelegateCallback?> delegates,
   void Function(ffi.Pointer<WindowsMessage>) handleWindowProc,
 ) {
-  if (initialized) return;
+  if (_initialized) return;
 
   if (!Platform.isWindows) return;
 
   ensureNativeLibraryInitialized();
 
   // Create native callable that dispatches to all delegates
-  nativeCallable = ffi.NativeCallable<NativeWindowProcCallback>.isolateLocal(
-    handleWindowProc,
-  );
+  final nativeCallable =
+      ffi.NativeCallable<NativeWindowProcCallback>.isolateLocal(
+        handleWindowProc,
+      );
 
   // Get the engine ID and register the native callback
   try {
     final engineId = PlatformDispatcher.instance.engineId!;
     setCallback(engineId, nativeCallable!.nativeFunction);
-    // Also notify the plugin instance via method channel
-    channel.invokeMethod('setEngineId', {'engineId': engineId});
   } catch (e) {
     debugPrint('Failed to set callback: $e');
   }
-  initialized = true;
-}
-
-void cleanup() {
-  if (nativeCallable != null) {
-    try {
-      final engineId = PlatformDispatcher.instance.implicitView?.viewId ?? 0;
-      setCallback(engineId, ffi.nullptr);
-      channel.invokeMethod('setEngineId', {'engineId': 0});
-    } catch (e) {
-      debugPrint('Failed to clear callback: $e');
-    }
-    nativeCallable?.close();
-    nativeCallable = null;
-    initialized = false;
-  }
+  _initialized = true;
 }

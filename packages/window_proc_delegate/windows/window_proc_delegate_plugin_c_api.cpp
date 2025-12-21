@@ -3,6 +3,7 @@
 #include <flutter/plugin_registrar_windows.h>
 
 #include <map>
+#include <mutex>
 #include <utility>
 
 #include "dart_api_dl.h"
@@ -68,6 +69,42 @@ window_proc_delegate::DartWindowProcCallback GetCallbackForEngine(
       }
     }
   };
+}
+
+std::vector<window_proc_delegate::DartWindowProcCallback> GetAllCallbacks() {
+  std::vector<window_proc_delegate::DartWindowProcCallback> callbacks;
+  for (const auto& entry : g_callbacks) {
+    auto callback = entry.second.first;
+    auto isolate = entry.second.second;
+
+    if (callback && isolate) {
+      callbacks.push_back(
+          [callback, isolate](window_proc_delegate::WindowsMessage* message) {
+            // Enter the Dart isolate before calling the callback
+            Dart_Isolate previous = Dart_CurrentIsolate_DL();
+            if (previous != isolate) {
+              if (previous) {
+                Dart_ExitIsolate_DL();
+              }
+              Dart_EnterIsolate_DL(isolate);
+            }
+
+            callback(message);
+
+            // Restore previous isolate
+            Dart_Isolate current = Dart_CurrentIsolate_DL();
+            if (previous != isolate) {
+              if (current) {
+                Dart_ExitIsolate_DL();
+              }
+              if (previous) {
+                Dart_EnterIsolate_DL(previous);
+              }
+            }
+          });
+    }
+  }
+  return callbacks;
 }
 
 intptr_t WindowProcDelegateInitDartApi(void* data) {

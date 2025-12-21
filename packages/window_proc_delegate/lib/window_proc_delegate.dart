@@ -22,9 +22,7 @@ final List<WindowProcDelegateCallback?> _delegates = [];
 /// The delegate will be called for each WindowProc message.
 /// Returns an ID that can be used to unregister the delegate.
 int registerWindowProcDelegate(WindowProcDelegateCallback delegate) {
-  if (!internal.initialized) {
-    internal.initialize(_delegates, _handleWindowProc);
-  }
+  internal.initialize(_delegates, _handleWindowProc);
 
   _delegates.add(delegate);
   return _delegates.length - 1;
@@ -38,7 +36,7 @@ void unregisterWindowProcDelegate(int id) {
 
   // If all delegates are removed, clear the native callback
   if (_delegates.every((d) => d == null)) {
-    _cleanup();
+    _delegates.clear();
   }
 }
 
@@ -62,9 +60,4 @@ void _handleWindowProc(ffi.Pointer<WindowsMessage> message) {
       }
     }
   }
-}
-
-void _cleanup() {
-  internal.cleanup();
-  _delegates.clear();
 }

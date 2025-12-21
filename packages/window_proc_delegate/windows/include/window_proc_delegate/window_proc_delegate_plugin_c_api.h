@@ -48,6 +48,9 @@ typedef std::function<void(WindowsMessage*)> DartWindowProcCallback;
 window_proc_delegate::DartWindowProcCallback GetCallbackForEngine(
     int64_t engineId);
 
+// Get all registered callbacks
+std::vector<window_proc_delegate::DartWindowProcCallback> GetAllCallbacks();
+
 #endif
 
 #endif  // FLUTTER_PLUGIN_WINDOW_PROC_DELEGATE_PLUGIN_C_API_H_

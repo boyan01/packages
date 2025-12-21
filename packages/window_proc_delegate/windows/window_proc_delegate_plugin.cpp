@@ -34,25 +34,27 @@ void WindowProcDelegatePlugin::RegisterWithRegistrar(
 
 WindowProcDelegatePlugin::WindowProcDelegatePlugin(
     flutter::PluginRegistrarWindows* registrar)
-    : registrar_(registrar), engine_id_(0) {
+    : registrar_(registrar) {
   window_proc_delegate_id_ = registrar->RegisterTopLevelWindowProcDelegate(
       [this](HWND hwnd, UINT message, WPARAM wparam,
              LPARAM lparam) -> std::optional<LRESULT> {
-        // Get the callback for this engine's ID
-        auto callback = GetCallbackForEngine(engine_id_);
-        if (callback) {
-          WindowsMessage msg = {};
-          msg.windowHandle = reinterpret_cast<intptr_t>(hwnd);
-          msg.message = static_cast<int32_t>(message);
-          msg.wParam = static_cast<int64_t>(wparam);
-          msg.lParam = static_cast<int64_t>(lparam);
-          msg.lResult = 0;
-          msg.handled = false;
+        // Get all registered callbacks and invoke them
+        auto callbacks = GetAllCallbacks();
+        for (const auto& callback : callbacks) {
+          if (callback) {
+            WindowsMessage msg = {};
+            msg.windowHandle = reinterpret_cast<intptr_t>(hwnd);
+            msg.message = static_cast<int32_t>(message);
+            msg.wParam = static_cast<int64_t>(wparam);
+            msg.lParam = static_cast<int64_t>(lparam);
+            msg.lResult = 0;
+            msg.handled = false;
 
-          callback(&msg);
+            callback(&msg);
 
-          if (msg.handled) {
-            return static_cast<LRESULT>(msg.lResult);
+            if (msg.handled) {
+              return static_cast<LRESULT>(msg.lResult);
+            }
           }
         }
         return std::nullopt;
@@ -66,22 +68,7 @@ WindowProcDelegatePlugin::~WindowProcDelegatePlugin() {
 void WindowProcDelegatePlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue>& method_call,
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
-  if (method_call.method_name().compare("setEngineId") == 0) {
-    const auto* arguments =
-        std::get_if<flutter::EncodableMap>(method_call.arguments());
-    if (arguments) {
-      auto engine_id_it = arguments->find(flutter::EncodableValue("engineId"));
-      if (engine_id_it != arguments->end()) {
-        engine_id_ = std::get<int64_t>(engine_id_it->second);
-        result->Success();
-        return;
-      }
-    }
-    result->Error("INVALID_ARGUMENTS",
-                  "Missing or invalid 'engineId' argument");
-  } else {
-    result->NotImplemented();
-  }
+  result->NotImplemented();
 }
 
 }  // namespace window_proc_delegate
