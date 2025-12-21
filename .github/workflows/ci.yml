@@ -45,14 +45,18 @@ jobs:
       - name: Check C++ formatting
         run: |
           # Find all C++/ObjC files and check formatting (excluding certain directories)
+          failed=0
           find packages -type f \( -name '*.h' -o -name '*.m' -o -name '*.mm' -o -name '*.cc' -o -name '*.cpp' \) \
             -not -path '*/example/*' \
             -not -path '*/dart/*' | while read file; do
             if ! clang-format --dry-run --Werror "$file" 2>&1; then
               echo "Error: $file is not properly formatted"
-              exit 1
+              failed=1
             fi
           done
+          if [ $failed -eq 1 ]; then
+            exit 1
+          fi
           
       - name: Run Dart analyze
         run: |
