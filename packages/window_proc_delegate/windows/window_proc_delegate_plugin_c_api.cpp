@@ -1,16 +1,18 @@
 #include "include/window_proc_delegate/window_proc_delegate_plugin_c_api.h"
 
-#include <flutter/plugin_registrar_windows.h>
-#include "dart_api_dl.h"
 #include <map>
 #include <utility>
 
+#include <flutter/plugin_registrar_windows.h>
+
+#include "dart_api_dl.h"
 #include "window_proc_delegate_plugin.h"
 
 namespace {
 // Global map to store callbacks and isolates for each engine
-std::map<int64_t, std::pair<DartWindowProcCallbackC, Dart_Isolate>> g_callbacks;
-}
+std::map<int64_t, std::pair<DartWindowProcCallbackC, Dart_Isolate>>
+    g_callbacks;
+}  // namespace
 
 void WindowProcDelegatePluginCApiRegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar) {
@@ -19,7 +21,8 @@ void WindowProcDelegatePluginCApiRegisterWithRegistrar(
           ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
 }
 
-void WindowProcDelegateSetCallback(int64_t engineId, DartWindowProcCallbackC callback) {
+void WindowProcDelegateSetCallback(int64_t engineId,
+                                   DartWindowProcCallbackC callback) {
   if (callback) {
     // Store the callback and current isolate
     Dart_Isolate current_isolate = Dart_CurrentIsolate_DL();
@@ -30,15 +33,16 @@ void WindowProcDelegateSetCallback(int64_t engineId, DartWindowProcCallbackC cal
   }
 }
 
-window_proc_delegate::DartWindowProcCallback GetCallbackForEngine(int64_t engineId) {
+window_proc_delegate::DartWindowProcCallback GetCallbackForEngine(
+    int64_t engineId) {
   auto it = g_callbacks.find(engineId);
   if (it == g_callbacks.end()) {
     return nullptr;
   }
-  
+
   auto callback = it->second.first;
   auto isolate = it->second.second;
-  
+
   // Return a lambda that handles isolate management
   return [callback, isolate](window_proc_delegate::WindowsMessage* message) {
     if (callback && isolate) {
@@ -50,9 +54,9 @@ window_proc_delegate::DartWindowProcCallback GetCallbackForEngine(int64_t engine
         }
         Dart_EnterIsolate_DL(isolate);
       }
-      
+
       callback(message);
-      
+
       // Restore previous isolate
       Dart_Isolate current = Dart_CurrentIsolate_DL();
       if (previous != isolate) {
