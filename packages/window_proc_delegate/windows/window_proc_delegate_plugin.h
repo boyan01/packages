@@ -11,7 +11,6 @@ namespace window_proc_delegate {
 
 // Windows message structure
 struct WindowsMessage {
-  int64_t viewId;
   intptr_t windowHandle;
   int32_t message;
   int64_t wParam;
@@ -20,13 +19,9 @@ struct WindowsMessage {
   bool handled;
 };
 
-// Callback signature for Dart WindowProc delegate
-typedef void (*DartWindowProcCallback)(WindowsMessage* message);
-
 class WindowProcDelegatePlugin : public flutter::Plugin {
  public:
-  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar,
-                                     WindowProcDelegatePlugin** out_plugin = nullptr);
+  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
 
   WindowProcDelegatePlugin(flutter::PluginRegistrarWindows* registrar);
 
@@ -41,13 +36,10 @@ class WindowProcDelegatePlugin : public flutter::Plugin {
       const flutter::MethodCall<flutter::EncodableValue> &method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
-  // Set the Dart callback function pointer
-  void SetDartCallback(DartWindowProcCallback callback);
-
   private:
     flutter::PluginRegistrarWindows* registrar_;
     int window_proc_delegate_id_;
-    DartWindowProcCallback dart_callback_;
+    int64_t engine_id_;
 };
 
 }  // namespace window_proc_delegate

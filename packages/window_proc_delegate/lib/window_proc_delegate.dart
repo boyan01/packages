@@ -1,12 +1,10 @@
 import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 /// Windows message structure passed from native code
 final class WindowsMessage extends ffi.Struct {
-  @ffi.Int64()
-  external int viewId;
-
   @ffi.IntPtr()
   external int windowHandle;
 
@@ -49,15 +47,17 @@ typedef NativeWindowProcCallback =
 )
 external int _initDartApi(ffi.Pointer<ffi.Void> data);
 
-/// Set the native callback for WindowProc messages
+/// Set the native callback for WindowProc messages with engine ID
 @ffi.Native<
   ffi.Void Function(
+    ffi.Int64,
     ffi.Pointer<
       ffi.NativeFunction<ffi.Void Function(ffi.Pointer<WindowsMessage>)>
     >,
   )
 >(symbol: 'WindowProcDelegateSetCallback')
 external void _setCallback(
+  int engineId,
   ffi.Pointer<
     ffi.NativeFunction<ffi.Void Function(ffi.Pointer<WindowsMessage>)>
   >
@@ -65,6 +65,10 @@ external void _setCallback(
 );
 
 class WindowProcDelegate {
+  static final MethodChannel _channel = const MethodChannel(
+    'window_proc_delegate',
+  );
+
   static final List<WindowProcDelegateCallback?> _delegates = [];
   static ffi.NativeCallable<NativeWindowProcCallback>? _nativeCallable;
   static bool _initialized = false;
@@ -124,9 +128,12 @@ class WindowProcDelegate {
       _handleWindowProc,
     );
 
-    // Register the native callback with the plugin
+    // Get the engine ID and register the native callback
     try {
-      _setCallback(_nativeCallable!.nativeFunction);
+      final engineId = PlatformDispatcher.instance.engineId!;
+      _setCallback(engineId, _nativeCallable!.nativeFunction);
+      // Also notify the plugin instance via method channel
+      _channel.invokeMethod('setEngineId', {'engineId': engineId});
     } catch (e) {
       debugPrint('Failed to set callback: $e');
     }
@@ -158,7 +165,9 @@ class WindowProcDelegate {
   static void _cleanup() {
     if (_nativeCallable != null) {
       try {
-        _setCallback(ffi.nullptr);
+        final engineId = PlatformDispatcher.instance.implicitView?.viewId ?? 0;
+        _setCallback(engineId, ffi.nullptr);
+        _channel.invokeMethod('setEngineId', {'engineId': 0});
       } catch (e) {
         debugPrint('Failed to clear callback: $e');
       }

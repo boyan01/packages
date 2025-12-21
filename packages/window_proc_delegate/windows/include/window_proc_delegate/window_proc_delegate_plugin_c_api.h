@@ -27,12 +27,26 @@ FLUTTER_PLUGIN_EXPORT void WindowProcDelegatePluginCApiRegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar);
 
 FLUTTER_PLUGIN_EXPORT void WindowProcDelegateSetCallback(
+    int64_t engineId,
     DartWindowProcCallbackC callback);
 
 FLUTTER_PLUGIN_EXPORT intptr_t WindowProcDelegateInitDartApi(void* data);
 
 #if defined(__cplusplus)
 }  // extern "C"
+#endif
+
+// C++ only functions (not in extern "C")
+#if defined(__cplusplus)
+#include <functional>
+
+namespace window_proc_delegate {
+typedef std::function<void(WindowsMessage*)> DartWindowProcCallback;
+}
+
+// Get the callback for a specific engine ID
+window_proc_delegate::DartWindowProcCallback GetCallbackForEngine(int64_t engineId);
+
 #endif
 
 #endif  // FLUTTER_PLUGIN_WINDOW_PROC_DELEGATE_PLUGIN_C_API_H_
