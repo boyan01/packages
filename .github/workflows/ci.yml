@@ -20,13 +20,27 @@ jobs:
           
       - name: Install dependencies
         run: |
-          cd packages/window_proc_delegate
-          flutter pub get
+          # Install dependencies for all packages
+          for dir in packages/*/; do
+            if [ -f "$dir/pubspec.yaml" ]; then
+              echo "Installing dependencies for $dir"
+              cd "$dir"
+              flutter pub get
+              cd - > /dev/null
+            fi
+          done
           
       - name: Check Dart formatting
         run: |
-          cd packages/window_proc_delegate
-          dart format --set-exit-if-changed --output=none .
+          # Check formatting for all packages
+          for dir in packages/*/; do
+            if [ -f "$dir/pubspec.yaml" ]; then
+              echo "Checking Dart format for $dir"
+              cd "$dir"
+              dart format --set-exit-if-changed --output=none .
+              cd - > /dev/null
+            fi
+          done
           
       - name: Check C++ formatting
         run: |
@@ -40,5 +54,12 @@ jobs:
           
       - name: Run Dart analyze
         run: |
-          cd packages/window_proc_delegate
-          flutter analyze --fatal-infos --fatal-warnings
+          # Analyze all packages
+          for dir in packages/*/; do
+            if [ -f "$dir/pubspec.yaml" ]; then
+              echo "Analyzing $dir"
+              cd "$dir"
+              flutter analyze --fatal-infos --fatal-warnings
+              cd - > /dev/null
+            fi
+          done
