@@ -21,14 +21,14 @@ extern "C" {
 #endif
 
 // Callback signature for Dart WindowProc delegate
-typedef void (*DartWindowProcCallbackC)(window_proc_delegate::WindowsMessage* message);
+typedef void (*DartWindowProcCallbackC)(
+    window_proc_delegate::WindowsMessage* message);
 
 FLUTTER_PLUGIN_EXPORT void WindowProcDelegatePluginCApiRegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar);
 
 FLUTTER_PLUGIN_EXPORT void WindowProcDelegateSetCallback(
-    int64_t engineId,
-    DartWindowProcCallbackC callback);
+    int64_t engineId, DartWindowProcCallbackC callback);
 
 FLUTTER_PLUGIN_EXPORT intptr_t WindowProcDelegateInitDartApi(void* data);
 
@@ -45,7 +45,8 @@ typedef std::function<void(WindowsMessage*)> DartWindowProcCallback;
 }
 
 // Get the callback for a specific engine ID
-window_proc_delegate::DartWindowProcCallback GetCallbackForEngine(int64_t engineId);
+window_proc_delegate::DartWindowProcCallback GetCallbackForEngine(
+    int64_t engineId);
 
 #endif
 
