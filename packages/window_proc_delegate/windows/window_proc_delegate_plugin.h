@@ -21,7 +21,7 @@ struct WindowsMessage {
 
 class WindowProcDelegatePlugin : public flutter::Plugin {
  public:
-  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows *registrar);
+  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
 
   WindowProcDelegatePlugin(flutter::PluginRegistrarWindows* registrar);
 
@@ -33,13 +33,13 @@ class WindowProcDelegatePlugin : public flutter::Plugin {
 
   // Called when a method is called on this plugin's channel from Dart.
   void HandleMethodCall(
-      const flutter::MethodCall<flutter::EncodableValue> &method_call,
+      const flutter::MethodCall<flutter::EncodableValue>& method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
 
-  private:
-    flutter::PluginRegistrarWindows* registrar_;
-    int window_proc_delegate_id_;
-    int64_t engine_id_;
+ private:
+  flutter::PluginRegistrarWindows* registrar_;
+  int window_proc_delegate_id_;
+  int64_t engine_id_;
 };
 
 }  // namespace window_proc_delegate

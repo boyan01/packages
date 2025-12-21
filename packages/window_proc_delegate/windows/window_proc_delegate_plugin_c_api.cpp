@@ -1,17 +1,16 @@
 #include "include/window_proc_delegate/window_proc_delegate_plugin_c_api.h"
 
+#include <flutter/plugin_registrar_windows.h>
+
 #include <map>
 #include <utility>
-
-#include <flutter/plugin_registrar_windows.h>
 
 #include "dart_api_dl.h"
 #include "window_proc_delegate_plugin.h"
 
 namespace {
 // Global map to store callbacks and isolates for each engine
-std::map<int64_t, std::pair<DartWindowProcCallbackC, Dart_Isolate>>
-    g_callbacks;
+std::map<int64_t, std::pair<DartWindowProcCallbackC, Dart_Isolate>> g_callbacks;
 }  // namespace
 
 void WindowProcDelegatePluginCApiRegisterWithRegistrar(
