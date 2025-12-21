@@ -49,24 +49,12 @@ class DartIsolateScope {
 };
 
 // Wrapper function that converts between C and C++ callback signatures
-int32_t CppCallbackWrapper(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, LRESULT* result) {
-  if (g_dart_callback && g_dart_isolate) {
+void CppCallbackWrapper(window_proc_delegate::WindowsMessage* message) {
+  if (g_dart_callback && g_dart_isolate && message) {
     // Enter the Dart isolate before calling the callback
     DartIsolateScope isolate_scope(g_dart_isolate);
-    
-    int64_t result_value = 0;
-    int32_t handled = g_dart_callback(
-        reinterpret_cast<intptr_t>(hwnd), 
-        static_cast<uint32_t>(message), 
-        static_cast<uint64_t>(wparam), 
-        static_cast<int64_t>(lparam), 
-        &result_value);
-    if (handled && result) {
-      *result = static_cast<LRESULT>(result_value);
-    }
-    return handled;
+    g_dart_callback(message);
   }
-  return 0;
 }
 }
 

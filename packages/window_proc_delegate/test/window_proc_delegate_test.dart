@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:window_proc_delegate/window_proc_delegate.dart';
 
@@ -10,9 +8,8 @@ void main() {
       message,
       wParam,
       lParam,
-      result,
     ) {
-      return false;
+      return null;
     });
     expect(id, greaterThanOrEqualTo(0));
   });
@@ -23,9 +20,8 @@ void main() {
       message,
       wParam,
       lParam,
-      result,
     ) {
-      return false;
+      return null;
     });
     expect(() => WindowProcDelegate.unregisterDelegate(id), returnsNormally);
   });

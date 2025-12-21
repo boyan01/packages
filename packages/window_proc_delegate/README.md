@@ -33,21 +33,18 @@ dependencies:
 ### Basic Example
 
 ```dart
-import 'dart:ffi' as ffi;
 import 'package:window_proc_delegate/window_proc_delegate.dart';
 
 // Register a delegate to handle WindowProc messages
 int delegateId = WindowProcDelegate.registerDelegate(
-  (int hwnd, int message, int wParam, int lParam, ffi.Pointer<ffi.Int64> result) {
+  (int hwnd, int message, int wParam, int lParam) {
     // Check for WM_ACTIVATEAPP (0x001C)
     if (message == 0x001C) {
       print('Window activation changed: $wParam');
-      // Return false to let other handlers process the message
-      return false;
     }
     
-    // Return false to let the message continue to be processed
-    return false;
+    // Return null to let other delegates process the message
+    return null;
   },
 );
 
@@ -57,18 +54,18 @@ WindowProcDelegate.unregisterDelegate(delegateId);
 
 ### Intercepting Messages
 
-You can intercept and prevent default handling of messages by returning `true`:
+You can intercept and prevent default handling of messages by returning a result value:
 
 ```dart
 int delegateId = WindowProcDelegate.registerDelegate(
-  (int hwnd, int message, int wParam, int lParam, ffi.Pointer<ffi.Int64> result) {
+  (int hwnd, int message, int wParam, int lParam) {
     // Intercept WM_CLOSE (0x0010) to prevent window closing
     if (message == 0x0010) {
       print('Window close prevented!');
-      return true; // Message is handled, prevent default behavior
+      return 0; // Return a result to handle the message
     }
     
-    return false;
+    return null; // Let other delegates process the message
   },
 );
 ```
@@ -79,17 +76,29 @@ You can set a custom result value for handled messages:
 
 ```dart
 int delegateId = WindowProcDelegate.registerDelegate(
-  (int hwnd, int message, int wParam, int lParam, ffi.Pointer<ffi.Int64> result) {
+  (int hwnd, int message, int wParam, int lParam) {
     if (message == 0x0084) { // WM_NCHITTEST
-      // Set custom result
-      result.value = 2; // HTCAPTION
-      return true; // Indicate message is handled
+      // Return custom result
+      return 2; // HTCAPTION - makes the window draggable
     }
     
-    return false;
+    return null;
   },
 );
 ```
+
+### Callback Parameters
+
+The callback receives the following parameters:
+
+- `hwnd` (int): Handle to the window
+- `message` (int): The message identifier (WM_* constant)
+- `wParam` (int): Additional message-specific information
+- `lParam` (int): Additional message-specific information
+
+**Return value:**
+- Return an `int` value to handle the message and use that as the result
+- Return `null` to let other delegates process the message
 
 ## Common Windows Messages
 

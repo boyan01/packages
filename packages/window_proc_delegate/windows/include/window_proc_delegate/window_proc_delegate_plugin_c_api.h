@@ -11,15 +11,17 @@
 #define FLUTTER_PLUGIN_EXPORT __declspec(dllimport)
 #endif
 
+// Forward declaration
+namespace window_proc_delegate {
+struct WindowsMessage;
+}
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 // Callback signature for Dart WindowProc delegate
-// Returns 1 if the message was handled, 0 otherwise
-typedef int32_t (*DartWindowProcCallbackC)(intptr_t hwnd, uint32_t message, 
-                                           uint64_t wparam, int64_t lparam,
-                                           int64_t* result);
+typedef void (*DartWindowProcCallbackC)(window_proc_delegate::WindowsMessage* message);
 
 FLUTTER_PLUGIN_EXPORT void WindowProcDelegatePluginCApiRegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar);

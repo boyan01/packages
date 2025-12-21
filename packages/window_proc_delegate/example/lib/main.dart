@@ -1,8 +1,6 @@
-import 'dart:ffi' as ffi;
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:window_proc_delegate/window_proc_delegate.dart';
 
 void main() {
@@ -18,7 +16,6 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  final _windowProcDelegatePlugin = WindowProcDelegate();
   int? _delegateId;
   final List<String> _messages = [];
 
@@ -40,11 +37,10 @@ class _MyAppState extends State<MyApp> {
   // Register a WindowProc delegate to intercept messages
   void _registerDelegate() {
     _delegateId = WindowProcDelegate.registerDelegate((
-      int hwnd,
-      int message,
-      int wParam,
-      int lParam,
-      ffi.Pointer<ffi.Int64> result,
+      hwnd,
+      message,
+      wParam,
+      lParam,
     ) {
       // Example: Log WM_ACTIVATEAPP (0x001C) messages
       if (message == 0x001C) {
@@ -61,10 +57,11 @@ class _MyAppState extends State<MyApp> {
       //   setState(() {
       //     _messages.insert(0, 'WM_CLOSE intercepted!');
       //   });
-      //   return true; // Return true to prevent default handling
+      //   return 0; // Return a value to handle the message
       // }
 
-      return false; // Let other handlers process the message
+      // Return null to let other handlers process the message
+      return null;
     });
   }
 

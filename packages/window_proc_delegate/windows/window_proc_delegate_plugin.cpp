@@ -42,10 +42,19 @@ WindowProcDelegatePlugin::WindowProcDelegatePlugin(flutter::PluginRegistrarWindo
   window_proc_delegate_id_ = registrar->RegisterTopLevelWindowProcDelegate(
       [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) -> std::optional<LRESULT> {
         if (dart_callback_) {
-          LRESULT result = 0;
-          int32_t handled = dart_callback_(hwnd, message, wparam, lparam, &result);
-          if (handled) {
-            return result;
+          WindowsMessage msg = {};
+          msg.viewId = 0;
+          msg.windowHandle = reinterpret_cast<intptr_t>(hwnd);
+          msg.message = static_cast<int32_t>(message);
+          msg.wParam = static_cast<int64_t>(wparam);
+          msg.lParam = static_cast<int64_t>(lparam);
+          msg.lResult = 0;
+          msg.handled = false;
+          
+          dart_callback_(&msg);
+          
+          if (msg.handled) {
+            return static_cast<LRESULT>(msg.lResult);
           }
         }
         return std::nullopt;

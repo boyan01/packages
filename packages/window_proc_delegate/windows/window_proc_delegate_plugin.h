@@ -9,10 +9,19 @@
 
 namespace window_proc_delegate {
 
+// Windows message structure
+struct WindowsMessage {
+  int64_t viewId;
+  intptr_t windowHandle;
+  int32_t message;
+  int64_t wParam;
+  int64_t lParam;
+  int64_t lResult;
+  bool handled;
+};
+
 // Callback signature for Dart WindowProc delegate
-// Returns 1 if handled (with result in out_result), 0 if not handled
-typedef int32_t (*DartWindowProcCallback)(HWND hwnd, UINT message, WPARAM wparam,
-                                          LPARAM lparam, LRESULT* out_result);
+typedef void (*DartWindowProcCallback)(WindowsMessage* message);
 
 class WindowProcDelegatePlugin : public flutter::Plugin {
  public:
