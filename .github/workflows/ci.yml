@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  format-and-analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          
+      - name: Install dependencies
+        run: |
+          # Install dependencies for all packages
+          for dir in packages/*/; do
+            if [ -f "$dir/pubspec.yaml" ]; then
+              echo "Installing dependencies for $dir"
+              cd "$dir"
+              flutter pub get
+              cd - > /dev/null
+            fi
+          done
+          
+      - name: Check Dart formatting
+        run: |
+          # Check formatting for all packages
+          for dir in packages/*/; do
+            if [ -f "$dir/pubspec.yaml" ]; then
+              echo "Checking Dart format for $dir"
+              cd "$dir"
+              dart format --set-exit-if-changed --output=none .
+              cd - > /dev/null
+            fi
+          done
+          
+      - name: Check C++ formatting
+        run: |
+          # Find all C++/ObjC files and check formatting (excluding certain directories)
+          failed=0
+          find packages -type f \( -name '*.h' -o -name '*.m' -o -name '*.mm' -o -name '*.cc' -o -name '*.cpp' \) \
+            -not -path '*/example/*' \
+            -not -path '*/dart/*' | while read file; do
+            if ! clang-format --dry-run --Werror "$file" 2>&1; then
+              echo "Error: $file is not properly formatted"
+              failed=1
+            fi
+          done
+          if [ $failed -eq 1 ]; then
+            exit 1
+          fi
+          
+      - name: Run Dart analyze
+        run: |
+          # Analyze all packages
+          for dir in packages/*/; do
+            if [ -f "$dir/pubspec.yaml" ]; then
+              echo "Analyzing $dir"
+              cd "$dir"
+              flutter analyze --fatal-infos --fatal-warnings
+              cd - > /dev/null
+            fi
+          done

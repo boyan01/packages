@@ -1,0 +1,23 @@
+name: window_proc_delegate
+description: A Flutter plugin that allows you to hook into Windows WindowProc messages from Dart code.
+version: 0.0.1
+homepage: https://github.com/boyan01/packages
+
+environment:
+  sdk: ^3.10.0
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      windows:
+        pluginClass: WindowProcDelegatePluginCApi
