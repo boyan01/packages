@@ -2,8 +2,6 @@ import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-import 'window_proc_delegate_platform_interface.dart';
-
 /// Signature for a WindowProc delegate callback.
 ///
 /// Returns true if the message was handled, false otherwise.
@@ -27,10 +25,48 @@ typedef NativeWindowProcCallback =
       ffi.Pointer<ffi.Int64> result,
     );
 
+/// Initialize Dart API DL
+@ffi.Native<ffi.IntPtr Function(ffi.Pointer<ffi.Void>)>(
+  symbol: 'WindowProcDelegateInitDartApi',
+)
+external int _initDartApi(ffi.Pointer<ffi.Void> data);
+
+/// Set the native callback for WindowProc messages
+@ffi.Native<
+  ffi.Void Function(
+    ffi.Pointer<
+      ffi.NativeFunction<
+        ffi.Int32 Function(
+          ffi.IntPtr,
+          ffi.Uint32,
+          ffi.Uint64,
+          ffi.Int64,
+          ffi.Pointer<ffi.Int64>,
+        )
+      >
+    >,
+  )
+>(symbol: 'WindowProcDelegateSetCallback')
+external void _setCallback(
+  ffi.Pointer<
+    ffi.NativeFunction<
+      ffi.Int32 Function(
+        ffi.IntPtr,
+        ffi.Uint32,
+        ffi.Uint64,
+        ffi.Int64,
+        ffi.Pointer<ffi.Int64>,
+      )
+    >
+  >
+  callback,
+);
+
 class WindowProcDelegate {
   static final List<WindowProcDelegateCallback?> _delegates = [];
   static ffi.NativeCallable<NativeWindowProcCallback>? _nativeCallable;
   static bool _initialized = false;
+  static bool _dartApiInitialized = false;
 
   /// Register a WindowProc delegate.
   ///
@@ -57,8 +93,29 @@ class WindowProcDelegate {
     }
   }
 
+  static void _ensureNativeLibraryInitialized() {
+    if (_dartApiInitialized) return;
+
+    if (!Platform.isWindows) return;
+
+    try {
+      final initResult = _initDartApi(ffi.NativeApi.initializeApiDLData);
+      if (initResult != 0) {
+        debugPrint('Failed to initialize Dart API DL: $initResult');
+      } else {
+        _dartApiInitialized = true;
+      }
+    } catch (e) {
+      debugPrint('Failed to initialize Dart API: $e');
+    }
+  }
+
   static void _initialize() {
     if (_initialized) return;
+
+    if (!Platform.isWindows) return;
+
+    _ensureNativeLibraryInitialized();
 
     // Create native callable that dispatches to all delegates
     _nativeCallable = ffi.NativeCallable<NativeWindowProcCallback>.isolateLocal(
@@ -67,9 +124,11 @@ class WindowProcDelegate {
     );
 
     // Register the native callback with the plugin
-    WindowProcDelegatePlatform.instance.setCallback(
-      _nativeCallable!.nativeFunction,
-    );
+    try {
+      _setCallback(_nativeCallable!.nativeFunction);
+    } catch (e) {
+      debugPrint('Failed to set callback: $e');
+    }
     _initialized = true;
   }
 
@@ -91,15 +150,15 @@ class WindowProcDelegate {
 
   static void _cleanup() {
     if (_nativeCallable != null) {
-      WindowProcDelegatePlatform.instance.setCallback(ffi.nullptr);
+      try {
+        _setCallback(ffi.nullptr);
+      } catch (e) {
+        debugPrint('Failed to clear callback: $e');
+      }
       _nativeCallable?.close();
       _nativeCallable = null;
       _initialized = false;
     }
     _delegates.clear();
-  }
-
-  Future<String?> getPlatformVersion() {
-    return WindowProcDelegatePlatform.instance.getPlatformVersion();
   }
 }
