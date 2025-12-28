@@ -60,8 +60,8 @@ WindowProcDelegatePlugin::WindowProcDelegatePlugin(
 }
 
 WindowProcDelegatePlugin::~WindowProcDelegatePlugin() {
-  if (engine_id_ != -1) {
-    UnregisterPlugin(engine_id_);
+  if (engine_id_.has_value()) {
+    UnregisterPlugin(*engine_id_);
   }
   registrar_->UnregisterTopLevelWindowProcDelegate(window_proc_delegate_id_);
 }

@@ -34,6 +34,8 @@ external void setCallback(
 
 bool _initialized = false;
 bool _dartApiInitialized = false;
+bool _engineIdInitialized = false;
+final MethodChannel _channel = MethodChannel('window_proc_delegate');
 
 void ensureNativeLibraryInitialized() {
   if (_dartApiInitialized) return;
@@ -49,6 +51,29 @@ void ensureNativeLibraryInitialized() {
     }
   } catch (e) {
     debugPrint('Failed to initialize Dart API: $e');
+  }
+}
+
+/// Ensures the plugin's engine ID is initialized.
+///
+/// This method registers the current engine ID with the native plugin.
+/// It can be called early in application startup to ensure the plugin
+/// is ready before any delegates are registered.
+///
+/// If not called explicitly, the engine ID will be set automatically
+/// when the first delegate is registered.
+Future<void> ensureInitializeEngineId() async {
+  if (!Platform.isWindows) return;
+
+  if (_engineIdInitialized) return;
+
+  _engineIdInitialized = true;
+  final int engineId = PlatformDispatcher.instance.engineId!;
+  try {
+    await _channel.invokeMethod('setEngineId', engineId);
+  } catch (e) {
+    debugPrint('Failed to set engine ID: $e');
+    rethrow;
   }
 }
 
@@ -73,8 +98,8 @@ void initialize(
     final int engineId = PlatformDispatcher.instance.engineId!;
     setCallback(engineId, nativeCallable.nativeFunction);
 
-    final channel = MethodChannel('window_proc_delegate');
-    channel.invokeMethod('setEngineId', engineId);
+    // Set engine ID asynchronously (fire-and-forget with error handling)
+    ensureInitializeEngineId();
   } catch (e) {
     debugPrint('Failed to set callback: $e');
   }
