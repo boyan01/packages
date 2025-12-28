@@ -1,5 +1,6 @@
 import 'dart:ffi' as ffi;
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'windows_message.dart';
 import '../window_proc_delegate.dart';
@@ -33,6 +34,8 @@ external void setCallback(
 
 bool _initialized = false;
 bool _dartApiInitialized = false;
+bool _engineIdInitialized = false;
+final MethodChannel _channel = MethodChannel('window_proc_delegate');
 
 void ensureNativeLibraryInitialized() {
   if (_dartApiInitialized) return;
@@ -48,6 +51,29 @@ void ensureNativeLibraryInitialized() {
     }
   } catch (e) {
     debugPrint('Failed to initialize Dart API: $e');
+  }
+}
+
+/// Ensures the plugin's engine ID is initialized.
+///
+/// This method registers the current engine ID with the native plugin.
+/// It can be called early in application startup to ensure the plugin
+/// is ready before any delegates are registered.
+///
+/// If not called explicitly, the engine ID will be set automatically
+/// when the first delegate is registered.
+Future<void> ensureInitializeEngineId() async {
+  if (!Platform.isWindows) return;
+
+  if (_engineIdInitialized) return;
+
+  final int engineId = PlatformDispatcher.instance.engineId!;
+  try {
+    await _channel.invokeMethod('setEngineId', engineId);
+    _engineIdInitialized = true;
+  } catch (e) {
+    debugPrint('Failed to set engine ID: $e');
+    rethrow;
   }
 }
 
@@ -69,8 +95,11 @@ void initialize(
 
   // Get the engine ID and register the native callback
   try {
-    final engineId = PlatformDispatcher.instance.engineId!;
+    final int engineId = PlatformDispatcher.instance.engineId!;
     setCallback(engineId, nativeCallable.nativeFunction);
+
+    // Set engine ID asynchronously (fire-and-forget with error handling)
+    ensureInitializeEngineId();
   } catch (e) {
     debugPrint('Failed to set callback: $e');
   }

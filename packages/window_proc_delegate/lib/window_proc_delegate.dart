@@ -2,6 +2,8 @@ import 'dart:ffi' as ffi;
 import 'src/windows_message.dart';
 import 'src/window_proc_delegate_internal.dart' as internal;
 
+export 'src/window_proc_delegate_internal.dart' show ensureInitializeEngineId;
+
 /// Signature for a WindowProc delegate callback.
 ///
 /// The callback receives the window message parameters:

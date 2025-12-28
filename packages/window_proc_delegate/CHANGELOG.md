@@ -1,3 +1,6 @@
+## 0.0.3
+* Fix crash on multi engine
+
 ## 0.0.2
 * Removed engine-specific message restriction - messages are now delivered to all registered delegates
 * Fixed crash issue when unregistering delegates
