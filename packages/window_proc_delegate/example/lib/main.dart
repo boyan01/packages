@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:window_proc_delegate/window_proc_delegate.dart';
+import 'package:desktop_multi_window/desktop_multi_window.dart';
 
 void main() {
   runApp(const MyApp());
@@ -84,6 +85,12 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
+  void _createChildWindow() async {
+    await WindowController.create(
+      WindowConfiguration(hiddenAtLaunch: false, arguments: ''),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -105,6 +112,11 @@ class _MyAppState extends State<MyApp> {
                   ElevatedButton(
                     onPressed: _delegateId != null ? _unregisterDelegate : null,
                     child: const Text('Unregister Delegate'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _createChildWindow,
+                    child: const Text('Create Child Window'),
                   ),
                 ],
               ),

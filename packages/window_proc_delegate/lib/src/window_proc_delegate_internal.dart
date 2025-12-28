@@ -1,5 +1,6 @@
 import 'dart:ffi' as ffi;
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'windows_message.dart';
 import '../window_proc_delegate.dart';
@@ -69,8 +70,11 @@ void initialize(
 
   // Get the engine ID and register the native callback
   try {
-    final engineId = PlatformDispatcher.instance.engineId!;
+    final int engineId = PlatformDispatcher.instance.engineId!;
     setCallback(engineId, nativeCallable.nativeFunction);
+
+    final channel = MethodChannel('window_proc_delegate');
+    channel.invokeMethod('setEngineId', engineId);
   } catch (e) {
     debugPrint('Failed to set callback: $e');
   }
