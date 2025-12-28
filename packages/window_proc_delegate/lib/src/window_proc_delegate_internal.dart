@@ -67,10 +67,10 @@ Future<void> ensureInitializeEngineId() async {
 
   if (_engineIdInitialized) return;
 
-  _engineIdInitialized = true;
   final int engineId = PlatformDispatcher.instance.engineId!;
   try {
     await _channel.invokeMethod('setEngineId', engineId);
+    _engineIdInitialized = true;
   } catch (e) {
     debugPrint('Failed to set engine ID: $e');
     rethrow;
