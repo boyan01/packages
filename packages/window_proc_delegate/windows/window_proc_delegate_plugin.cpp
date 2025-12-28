@@ -71,13 +71,10 @@ void WindowProcDelegatePlugin::HandleMethodCall(
     std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
   if (method_call.method_name().compare("setEngineId") == 0) {
     const auto* arguments = method_call.arguments();
-    if (const auto* engine_id = std::get_if<int64_t>(arguments)) {
-      engine_id_ = *engine_id;
-      RegisterPlugin(engine_id_, this);
-      result->Success();
-    } else {
-      result->Error("INVALID_ARGUMENT", "Engine ID must be an integer");
-    }
+    auto engine_id = arguments->LongValue();
+    engine_id_ = engine_id;
+    RegisterPlugin(engine_id, this);
+    result->Success();
   } else {
     result->NotImplemented();
   }
